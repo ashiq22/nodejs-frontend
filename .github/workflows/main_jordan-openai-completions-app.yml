@@ -8,6 +8,10 @@ on:
     branches:
       - main
   workflow_dispatch:
+env:
+  AZURE_WEBAPP_NAME: mytestapp98   # set this to your application's name
+  NODE_VERSION: '18.x'                # set this to the node version to use
+  AZURE_WEBAPP_PACKAGE_PATH: '.'      # set this to the path to your web app project, defaults to the repository root
 
 jobs:
   build:
@@ -36,21 +40,30 @@ jobs:
   deploy:
     runs-on: ubuntu-latest
     needs: build
-    environment:
-      name: 'Production'
-      url: ${{ steps.deploy-to-webapp.outputs.webapp-url }}
+  
 
     steps:
       - name: Download artifact from build job
         uses: actions/download-artifact@v2
         with:
           name: node-app
+      - uses: azure/login@v1
+        with:
+          creds: |
+            {
+              "clientId": "ff09c246-c775-49e9-a978-3569c31c39a7",
+              "clientSecret":  "HwS8Q~whsmU14OL04aFle48RGL62MWSOmMXFKb7l",
+              "subscriptionId": "b6ea4878-8890-4ed9-89fb-205c823966d3",
+              "tenantId": "79249549-4168-447a-9329-da3c76b5b824"
+            }
 
       - name: 'Deploy to Azure Web App'
         id: deploy-to-webapp
         uses: azure/webapps-deploy@v2
         with:
-          app-name: 'jordan-openai-completions-app'
-          slot-name: 'Production'
-          publish-profile: ${{ secrets.AZUREAPPSERVICE_PUBLISHPROFILE_71A7967F8D3742BB9AF3615AA0A4DD25 }}
-          package: .
+          app-name: ${{ env.AZURE_WEBAPP_NAME }}
+          package: ${{ env.AZURE_WEBAPP_PACKAGE_PATH }}
+
+      - name: logout
+        run: |
+          az logout
